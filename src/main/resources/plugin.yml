@@ -1,0 +1,45 @@
+name: Region
+main: com.alexetrey.region.RegionPlugin
+version: 1.0.0
+author: alexetrey
+description: Region protection plugin for Minecraft 1.21
+api-version: 1.21
+
+commands:
+  region:
+    description: Main command for region management
+    usage: /region
+    permission: region.menu
+
+permissions:
+  region.menu:
+    description: Access region menus
+    default: true
+  region.add:
+    description: Add players to region whitelist
+    default: op
+  region.remove:
+    description: Remove players from region whitelist
+    default: op
+  region.whitelist:
+    description: List whitelisted players
+    default: true
+  region.create:
+    description: Create regions
+    default: op
+  region.flag:
+    description: Edit region flags
+    default: op
+  region.bypass:
+    description: Bypass region protection
+    default: op
+  region.rename:
+    description: Rename regions
+    default: op
+  region.redefine:
+    description: Redefine region boundaries
+    default: op
+  region.delete:
+    description: Delete regions
+    default: op
+ 

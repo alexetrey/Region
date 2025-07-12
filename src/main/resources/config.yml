@@ -1,0 +1,29 @@
+# Region Plugin Configuration
+
+storage:
+  type: "mysql"
+
+mysql:
+  host: "localhost"
+  port: 3306
+  database: "regions"
+  user: "root"
+  password: "your_mysql_password_here"
+  pool:
+    max-connections: 10
+    connection-timeout: 30000
+    idle-timeout: 600000
+
+features:
+  show-particles: true
+  show-entry-title: true
+  show-boundaries: false
+
+messages:
+  prefix: "&8[&6Region&8] &r"
+  region-created: "&aRegion '%region%' created successfully!"
+  region-deleted: "&cRegion '%region%' deleted!"
+  player-added: "&aAdded %player% to the whitelist of region '%region%'!"
+  player-removed: "&cRemoved %player% from the whitelist of region '%region%'!"
+  no-permission: "&cYou don't have permission to do that!"
+  region-not-found: "&cRegion '%region%' not found!" 
