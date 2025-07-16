@@ -175,31 +175,6 @@ RegionManager manager = plugin.getRegionManager();
 boolean canBreak = manager.hasPermission(player, location, RegionFlags.Flag.BLOCK_BREAK);
 ```
 
-## GitHub Setup
-
-### Initial Setup
-1. Create a new repository on GitHub
-2. Clone this repository locally
-3. Add your GitHub repository as remote origin
-4. Push the code to GitHub
-
-```bash
-git remote add origin https://github.com/yourusername/Region.git
-git branch -M main
-git push -u origin main
-```
-
-### Release Process
-1. Update version in `build.gradle` and `plugin.yml`
-2. Create a new tag
-3. Build the project
-4. Upload the JAR to GitHub Releases
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-./gradlew build
-```
 
 ## Support
 
