@@ -94,13 +94,13 @@ public class RegionFlags {
 
     public RegionFlags() {
         this.flags = new HashMap<>();
-        flags.put(Flag.BLOCK_BREAK, FlagState.WHITELIST);
-        flags.put(Flag.BLOCK_PLACE, FlagState.WHITELIST);
-        flags.put(Flag.INTERACT, FlagState.WHITELIST);
-        flags.put(Flag.ENTITY_DAMAGE, FlagState.WHITELIST);
+        flags.put(Flag.BLOCK_BREAK, FlagState.NONE);
+        flags.put(Flag.BLOCK_PLACE, FlagState.NONE);
+        flags.put(Flag.INTERACT, FlagState.NONE);
+        flags.put(Flag.ENTITY_DAMAGE, FlagState.NONE);
         
         for (IFlag customFlag : CustomFlagRegistry.getCustomFlags().values()) {
-            flags.put(customFlag, FlagState.WHITELIST);
+            flags.put(customFlag, FlagState.NONE);
         }
     }
 
@@ -109,7 +109,7 @@ public class RegionFlags {
     }
 
     public FlagState getFlag(IFlag flag) {
-        return flags.getOrDefault(flag, FlagState.WHITELIST);
+        return flags.getOrDefault(flag, FlagState.NONE);
     }
 
     public boolean isAllowed(IFlag flag, boolean isWhitelisted) {

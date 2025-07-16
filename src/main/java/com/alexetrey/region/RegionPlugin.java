@@ -12,6 +12,7 @@ import com.alexetrey.region.gui.GUIManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import fr.minuskube.inv.InventoryManager;
+import fr.minuskube.inv.SmartInvsPlugin;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -71,15 +72,28 @@ public class RegionPlugin extends JavaPlugin {
         String database = config.getString("mysql.database", "regions");
         String user = config.getString("mysql.user", "root");
         String password = config.getString("mysql.password", "");
-        
+
+        getLogger().info("Attempting to connect to MySQL database:");
+        getLogger().info("  Host: " + host);
+        getLogger().info("  Port: " + port);
+        getLogger().info("  Database: " + database);
+        getLogger().info("  User: " + user);
+
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&autoReconnect=true");
         hikariConfig.setUsername(user);
         hikariConfig.setPassword(password);
         hikariConfig.setMaximumPoolSize(10);
         hikariConfig.setPoolName("RegionHikariCP");
-        
-        dataSource = new HikariDataSource(hikariConfig);
+
+        try {
+            dataSource = new HikariDataSource(hikariConfig);
+        } catch (Exception e) {
+            getLogger().severe("Failed to initialize MySQL connection pool!");
+            getLogger().severe("Host: " + host + ", Port: " + port + ", Database: " + database + ", User: " + user);
+            getLogger().severe("Error: " + e.getMessage());
+            throw e;
+        }
     }
     
     private void setupSQLite() {

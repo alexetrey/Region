@@ -14,12 +14,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RegionManager {
     private final RegionPlugin plugin;
     private final Map<String, Region> regions;
-    private final Map<UUID, Set<String>> playerRegions;
 
     public RegionManager(RegionPlugin plugin) {
         this.plugin = plugin;
         this.regions = new ConcurrentHashMap<>();
-        this.playerRegions = new ConcurrentHashMap<>();
         createTables();
         loadRegions();
     }
@@ -31,7 +29,6 @@ public class RegionManager {
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS regions (
                     name VARCHAR(64) PRIMARY KEY,
-                    owner VARCHAR(36) NOT NULL,
                     world VARCHAR(64) NOT NULL,
                     corner1_x INT NOT NULL,
                     corner1_y INT NOT NULL,
@@ -74,7 +71,6 @@ public class RegionManager {
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 String name = rs.getString("name");
-                UUID owner = UUID.fromString(rs.getString("owner"));
                 World world = plugin.getServer().getWorld(rs.getString("world"));
                 
                 if (world == null) continue;
@@ -92,10 +88,8 @@ public class RegionManager {
                 RegionFlags flags = loadFlags(name);
                 long createdAt = rs.getLong("created_at");
                 
-                Region region = new Region(name, owner, world, corner1, corner2, whitelist, flags, createdAt);
+                Region region = new Region(name, world, corner1, corner2, whitelist, flags, createdAt);
                 regions.put(name, region);
-                
-                playerRegions.computeIfAbsent(owner, k -> new HashSet<>()).add(name);
             }
             
         } catch (SQLException e) {
@@ -142,30 +136,28 @@ public class RegionManager {
         return flags;
     }
 
-    public boolean createRegion(String name, UUID owner, Location corner1, Location corner2) {
+    public boolean createRegion(String name, Location corner1, Location corner2) {
         if (regions.containsKey(name)) return false;
         
-        Region region = new Region(name, owner, corner1.getWorld(), corner1, corner2);
+        Region region = new Region(name, corner1.getWorld(), corner1, corner2);
         
         try (Connection conn = plugin.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
-                 "INSERT INTO regions (name, owner, world, corner1_x, corner1_y, corner1_z, corner2_x, corner2_y, corner2_z, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                 "INSERT INTO regions (name, world, corner1_x, corner1_y, corner1_z, corner2_x, corner2_y, corner2_z, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             
             stmt.setString(1, name);
-            stmt.setString(2, owner.toString());
-            stmt.setString(3, corner1.getWorld().getName());
-            stmt.setInt(4, corner1.getBlockX());
-            stmt.setInt(5, corner1.getBlockY());
-            stmt.setInt(6, corner1.getBlockZ());
-            stmt.setInt(7, corner2.getBlockX());
-            stmt.setInt(8, corner2.getBlockY());
-            stmt.setInt(9, corner2.getBlockZ());
-            stmt.setLong(10, region.getCreatedAt());
+            stmt.setString(2, corner1.getWorld().getName());
+            stmt.setInt(3, corner1.getBlockX());
+            stmt.setInt(4, corner1.getBlockY());
+            stmt.setInt(5, corner1.getBlockZ());
+            stmt.setInt(6, corner2.getBlockX());
+            stmt.setInt(7, corner2.getBlockY());
+            stmt.setInt(8, corner2.getBlockZ());
+            stmt.setLong(9, region.getCreatedAt());
             
             stmt.executeUpdate();
             
             regions.put(name, region);
-            playerRegions.computeIfAbsent(owner, k -> new HashSet<>()).add(name);
             
             saveFlags(name, region.getFlags());
             
@@ -192,7 +184,6 @@ public class RegionManager {
             stmt.executeUpdate();
             
             regions.remove(name);
-            playerRegions.get(region.getOwner()).remove(name);
             
             return true;
             
@@ -312,27 +303,14 @@ public class RegionManager {
                 .orElse(null);
     }
 
-    public Set<Region> getPlayerRegions(UUID playerId) {
-        Set<String> regionNames = playerRegions.get(playerId);
-        if (regionNames == null) return new HashSet<>();
-        
-        Set<Region> playerRegions = new HashSet<>();
-        for (String name : regionNames) {
-            Region region = regions.get(name);
-            if (region != null) {
-                playerRegions.add(region);
-            }
-        }
-        return playerRegions;
+    public Collection<Region> getAllRegions() {
+        return regions.values();
     }
 
     public boolean hasPermission(Player player, Location location, RegionFlags.IFlag flag) {
         Region region = getRegionAt(location);
         if (region == null) return true;
-        
-        if (player.hasPermission("region.bypass")) return true;
-        
-        boolean isWhitelisted = region.isOwner(player.getUniqueId()) || region.isWhitelisted(player.getUniqueId());
+        boolean isWhitelisted = region.isWhitelisted(player.getUniqueId());
         return region.getFlags().isAllowed(flag, isWhitelisted);
     }
 
@@ -362,12 +340,6 @@ public class RegionManager {
             regions.remove(oldName);
             regions.put(newName, region);
             
-            Set<String> playerRegionNames = playerRegions.get(region.getOwner());
-            if (playerRegionNames != null) {
-                playerRegionNames.remove(oldName);
-                playerRegionNames.add(newName);
-            }
-            
             return true;
             
         } catch (SQLException e) {
@@ -394,7 +366,7 @@ public class RegionManager {
             
             stmt.executeUpdate();
             
-            Region newRegion = new Region(regionName, oldRegion.getOwner(), newCorner1.getWorld(), 
+            Region newRegion = new Region(regionName, oldRegion.getWorld(), 
                 newCorner1, newCorner2, oldRegion.getWhitelist(), oldRegion.getFlags(), oldRegion.getCreatedAt());
             
             regions.put(regionName, newRegion);

@@ -16,6 +16,8 @@ import fr.minuskube.inv.ClickableItem;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.HashSet;
+import java.util.stream.Collectors;
 
 public class GUIManager {
     private final RegionPlugin plugin;
@@ -26,10 +28,12 @@ public class GUIManager {
 
     public void openRegionsMenu(Player player) {
         try {
-            Set<Region> playerRegions = plugin.getRegionManager().getPlayerRegions(player.getUniqueId());
+            Set<Region> allRegions = new HashSet<>(plugin.getRegionManager().getAllRegions());
+            Set<Region> playerRegions = allRegions.stream().filter(r -> r.isWhitelisted(player.getUniqueId())).collect(Collectors.toSet());
             plugin.getLogger().info("Opening regions menu for player " + player.getName() + " with " + playerRegions.size() + " regions");
             
-            SmartInventory.builder()
+            fr.minuskube.inv.SmartInventory.builder()
+                .manager(plugin.getInvManager())
                 .id("regions_menu")
                 .provider(new InventoryProvider() {
                     @Override
@@ -52,7 +56,7 @@ public class GUIManager {
                             ItemMeta meta = emptyItem.getItemMeta();
                             if (meta != null) {
                                 meta.setDisplayName("§cNo Regions");
-                                meta.setLore(List.of("§7You don't own any regions yet.", "§7Use /region wand to get started!"));
+                                meta.setLore(List.of("§7You are not whitelisted in any regions yet.", "§7Use /region wand to get started!"));
                                 emptyItem.setItemMeta(meta);
                             }
                             contents.set(SlotPos.of(0, 4), ClickableItem.empty(emptyItem));
@@ -74,6 +78,7 @@ public class GUIManager {
 
     public void openRegionMenu(Player player, Region region) {
         SmartInventory.builder()
+            .manager(plugin.getInvManager())
             .id("region_menu_" + region.getName())
             .provider(new InventoryProvider() {
                 @Override
@@ -148,6 +153,7 @@ public class GUIManager {
     public void openWhitelistMenu(Player player, Region region) {
         Set<UUID> whitelist = region.getWhitelist();
         SmartInventory.builder()
+            .manager(plugin.getInvManager())
             .id("whitelist_menu_" + region.getName())
             .provider(new InventoryProvider() {
                 @Override
@@ -199,6 +205,7 @@ public class GUIManager {
     public void openFlagsMenu(Player player, Region region) {
         RegionFlags flags = region.getFlags();
         SmartInventory.builder()
+            .manager(plugin.getInvManager())
             .id("flags_menu_" + region.getName())
             .provider(new InventoryProvider() {
                 @Override
@@ -242,7 +249,6 @@ public class GUIManager {
         if (meta != null) {
             meta.setDisplayName("§6" + region.getName());
             meta.setLore(List.of(
-                "§7Owner: §f" + Bukkit.getOfflinePlayer(region.getOwner()).getName(),
                 "§7Members: §f" + region.getWhitelist().size(),
                 "§7Click to manage"
             ));

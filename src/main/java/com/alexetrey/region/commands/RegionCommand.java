@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class RegionCommand implements CommandExecutor, TabCompleter {
     private final RegionPlugin plugin;
@@ -51,7 +52,6 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
             case "wand" -> handleWand(player);
             case "add" -> handleAdd(player, args);
             case "remove" -> handleRemove(player, args);
-            case "whitelist" -> handleWhitelist(player, args);
             case "flag" -> handleFlag(player, args);
             case "list" -> handleList(player);
 
@@ -85,7 +85,7 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (plugin.getRegionManager().createRegion(name, player.getUniqueId(), 
+        if (plugin.getRegionManager().createRegion(name, 
                 plugin.getWandManager().getCorner1(player), 
                 plugin.getWandManager().getCorner2(player))) {
             player.sendMessage("§aRegion '" + name + "' created successfully!");
@@ -124,11 +124,6 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (!region.isOwner(player.getUniqueId()) && !player.hasPermission("region.bypass")) {
-            player.sendMessage("§cYou don't own this region!");
-            return;
-        }
-
         Player target = Bukkit.getPlayer(username);
         if (target == null) {
             player.sendMessage("§cPlayer '" + username + "' not found!");
@@ -163,11 +158,6 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (!region.isOwner(player.getUniqueId()) && !player.hasPermission("region.bypass")) {
-            player.sendMessage("§cYou don't own this region!");
-            return;
-        }
-
         Player target = Bukkit.getPlayer(username);
         if (target == null) {
             player.sendMessage("§cPlayer '" + username + "' not found!");
@@ -179,44 +169,6 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
             target.sendMessage("§cYou have been removed from the whitelist of region '" + regionName + "'!");
         } else {
             player.sendMessage("§cFailed to remove player from whitelist!");
-        }
-    }
-
-    private void handleWhitelist(Player player, String[] args) {
-        if (!player.hasPermission("region.whitelist")) {
-            player.sendMessage("§cYou don't have permission to view whitelist!");
-            return;
-        }
-
-        if (args.length < 2) {
-            player.sendMessage("§cUsage: /region whitelist <name>");
-            return;
-        }
-
-        String regionName = args[1];
-        Region region = plugin.getRegionManager().getRegion(regionName);
-        if (region == null) {
-            player.sendMessage("§cRegion '" + regionName + "' not found!");
-            return;
-        }
-
-        if (!region.isOwner(player.getUniqueId()) && !player.hasPermission("region.bypass")) {
-            player.sendMessage("§cYou don't own this region!");
-            return;
-        }
-
-        Set<UUID> whitelist = region.getWhitelist();
-        if (whitelist.isEmpty()) {
-            player.sendMessage("§eRegion '" + regionName + "' has no whitelisted players.");
-            return;
-        }
-
-        player.sendMessage("§aWhitelisted players for region '" + regionName + "':");
-        for (UUID uuid : whitelist) {
-            String name = Bukkit.getOfflinePlayer(uuid).getName();
-            if (name != null) {
-                player.sendMessage("§7- " + name);
-            }
         }
     }
 
@@ -238,11 +190,6 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
         Region region = plugin.getRegionManager().getRegion(regionName);
         if (region == null) {
             player.sendMessage("§cRegion '" + regionName + "' not found!");
-            return;
-        }
-
-        if (!region.isOwner(player.getUniqueId()) && !player.hasPermission("region.bypass")) {
-            player.sendMessage("§cYou don't own this region!");
             return;
         }
 
@@ -273,17 +220,17 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        Set<Region> playerRegions = plugin.getRegionManager().getPlayerRegions(player.getUniqueId());
+        Set<Region> playerRegions = plugin.getRegionManager().getAllRegions().stream()
+            .filter(r -> r.isWhitelisted(player.getUniqueId()))
+            .collect(Collectors.toSet());
         if (playerRegions.isEmpty()) {
-            player.sendMessage("§eYou don't own any regions yet.");
+            player.sendMessage("§eYou are not whitelisted in any regions yet.");
             return;
         }
 
         player.sendMessage("§aYour regions:");
         for (Region region : playerRegions) {
-            String ownerName = Bukkit.getOfflinePlayer(region.getOwner()).getName();
-            if (ownerName == null) ownerName = "Unknown";
-            player.sendMessage("§7- §6" + region.getName() + " §7(Owner: §f" + ownerName + "§7, Members: §f" + region.getWhitelist().size() + "§7)");
+            player.sendMessage("§7- §6" + region.getName() + " §7(Members: §f" + region.getWhitelist().size() + "§7)");
         }
     }
 
@@ -296,11 +243,6 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
         Region region = plugin.getRegionManager().getRegion(regionName);
         if (region == null) {
             player.sendMessage("§cRegion '" + regionName + "' not found!");
-            return;
-        }
-
-        if (!region.isOwner(player.getUniqueId()) && !player.hasPermission("region.bypass")) {
-            player.sendMessage("§cYou don't own this region!");
             return;
         }
 
@@ -326,11 +268,6 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
         Region region = plugin.getRegionManager().getRegion(oldName);
         if (region == null) {
             player.sendMessage("§cRegion '" + oldName + "' not found!");
-            return;
-        }
-
-        if (!region.isOwner(player.getUniqueId()) && !player.hasPermission("region.bypass")) {
-            player.sendMessage("§cYou don't own this region!");
             return;
         }
 
@@ -361,11 +298,6 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
         Region region = plugin.getRegionManager().getRegion(regionName);
         if (region == null) {
             player.sendMessage("§cRegion '" + regionName + "' not found!");
-            return;
-        }
-
-        if (!region.isOwner(player.getUniqueId()) && !player.hasPermission("region.bypass")) {
-            player.sendMessage("§cYou don't own this region!");
             return;
         }
 
@@ -401,11 +333,6 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (!region.isOwner(player.getUniqueId()) && !player.hasPermission("region.bypass")) {
-            player.sendMessage("§cYou don't own this region!");
-            return;
-        }
-
         if (plugin.getRegionManager().deleteRegion(regionName)) {
             player.sendMessage("§aRegion '" + regionName + "' deleted successfully!");
         } else {
@@ -418,13 +345,15 @@ public class RegionCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            completions.addAll(List.of("create", "wand", "add", "remove", "whitelist", "flag", "list", "rename", "redefine", "delete"));
+            completions.addAll(List.of("create", "wand", "add", "remove", "flag", "list", "rename", "redefine", "delete"));
         } else if (args.length == 2) {
             String subCommand = args[0].toLowerCase();
             switch (subCommand) {
-                case "add", "remove", "whitelist", "flag", "rename", "redefine", "delete" -> {
+                case "add", "remove", "flag", "rename", "redefine", "delete" -> {
                     if (sender instanceof Player player) {
-                        Set<Region> playerRegions = plugin.getRegionManager().getPlayerRegions(player.getUniqueId());
+                        Set<Region> playerRegions = plugin.getRegionManager().getAllRegions().stream()
+                            .filter(r -> r.isWhitelisted(player.getUniqueId()))
+                            .collect(Collectors.toSet());
                         for (Region region : playerRegions) {
                             completions.add(region.getName());
                         }
