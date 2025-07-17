@@ -308,6 +308,7 @@ public class RegionManager {
     }
 
     public boolean hasPermission(Player player, Location location, RegionFlags.IFlag flag) {
+        if (player.hasPermission("region.bypass")) return true;
         Region region = getRegionAt(location);
         if (region == null) return true;
         boolean isWhitelisted = region.isWhitelisted(player.getUniqueId());
